@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Team &mdash; Standings</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f7f6f3;color:#1f2421;margin:0;padding:20px;}.wrap{max-width:760px;margin:0 auto;background:#fff;border:1px solid #e4e2dc;border-radius:12px;padding:20px;}.tw{overflow-x:auto;}h1{font-size:1.4rem;margin:0 0 2px;color:#b5562a;}.meta{color:#6b726e;font-size:.85rem;margin:0 0 14px;}.back{margin:0 0 10px;font-size:.8rem;}.back a{color:#b5562a;text-decoration:none;}.controls{margin:0 0 14px;font-size:.85rem;color:#6b726e;}.controls select{font:inherit;padding:5px 8px;border:1px solid #d8d4cc;border-radius:7px;background:#fff;color:#1f2421;margin-left:6px;}table{border-collapse:collapse;width:100%;font-size:.92rem;}th,td{padding:7px 8px;text-align:center;border-bottom:1px solid #e4e2dc;font-variant-numeric:tabular-nums;white-space:nowrap;}th{font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;color:#6b726e;}th.nm,td.nm{text-align:left;}tbody tr:nth-child(odd){background:#faf7f4;}.ft{color:#9a9a9a;font-size:.72rem;margin-top:14px;text-align:center;}</style></head><body><div class="wrap"><p class="back"><a href="index.html">&larr; All teams</a></p><h1>My Team</h1><p class="meta">Standings &middot; <span id="scopeLabel"></span> &middot; <span id="gcount"></span> &middot; updated 6/16/2026</p><div class="controls"><label>Season<select id="seasonSel" onchange="render()"><option value="all" selected>All time</option></select></label></div><div class="tw" id="tbl"></div><p class="ft">Read-only snapshot &middot; sorted by batting average</p></div><script>
+const DATA={"team":"My Team","games":[]};
+
+const RATE=['avg','obp','slg','ops'];
+const COLS=[['player','Player'],['g','G'],['pa','PA'],['ab','AB'],['h','H'],['hr','HR'],['r','R'],['rbi','RBI'],['bb','BB'],['avg','AVG'],['obp','OBP'],['slg','SLG'],['ops','OPS']];
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];});}
+function fmt3(v){return v.toFixed(3).replace(/^0/,'');}
+function agg(scope){
+  const games=scope==='all'?DATA.games:DATA.games.filter(function(g){return g.season===scope;});
+  const tot={};
+  games.forEach(function(g){g.lines.forEach(function(l){
+    let t=tot[l.p];
+    if(!t){t=tot[l.p]={player:l.p,g:0,ab:0,b1:0,b2:0,b3:0,hr:0,bb:0,r:0,rbi:0};}
+    t.g++;t.ab+=l.ab;t.b1+=l.b1;t.b2+=l.b2;t.b3+=l.b3;t.hr+=l.hr;t.bb+=l.bb;t.r+=l.r;t.rbi+=l.rbi;
+  });});
+  return Object.keys(tot).map(function(k){
+    const t=tot[k];t.h=t.b1+t.b2+t.b3+t.hr;t.pa=t.ab+t.bb;const tb=t.b1+2*t.b2+3*t.b3+4*t.hr;
+    t.avg=t.ab?t.h/t.ab:0;t.obp=(t.ab+t.bb)?(t.h+t.bb)/(t.ab+t.bb):0;t.slg=t.ab?tb/t.ab:0;t.ops=t.obp+t.slg;return t;
+  }).sort(function(a,b){return b.avg-a.avg;});
+}
+function render(){
+  const scope=document.getElementById('seasonSel').value;
+  const rows=agg(scope);
+  const gc=scope==='all'?DATA.games.length:DATA.games.filter(function(g){return g.season===scope;}).length;
+  document.getElementById('scopeLabel').textContent=scope==='all'?'All time':scope;
+  document.getElementById('gcount').textContent=gc+' game'+(gc===1?'':'s');
+  const tbl=document.getElementById('tbl');
+  if(!rows.length){tbl.innerHTML='<p style="color:#6b726e">No stats recorded'+(scope==='all'?'':' for '+esc(scope))+'.</p>';return;}
+  let h='<table><thead><tr>'+COLS.map(function(c){return '<th class="'+(c[0]==='player'?'nm':'')+'">'+c[1]+'</th>';}).join('')+'</tr></thead><tbody>';
+  rows.forEach(function(t){h+='<tr>'+COLS.map(function(c){let v=t[c[0]];if(RATE.indexOf(c[0])>=0)v=fmt3(v);return '<td class="'+(c[0]==='player'?'nm':'')+'">'+(c[0]==='player'?esc(v):v)+'</td>';}).join('')+'</tr>';});
+  h+='</tbody></table>';tbl.innerHTML=h;
+}
+render();
+
+</script></body></html>
